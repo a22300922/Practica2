@@ -1,0 +1,11 @@
+<h1>Catálogo de Produtos</h1>
+
+@if (products().length === 0) {
+  <p>Cargando productos...</p>
+} @else {
+  <div class="grid">
+    @for (product of products(); track product.id) {
+      <app-producto [product]="product" />
+    }
+  </div>
+}

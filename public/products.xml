@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<products>
+
+    <product>
+        <id>1</id>
+        <name>Teclado Mecánico RGB</name>
+        <price>1299.99</price>
+        <imageUrl>teclado.png</imageUrl>
+        <category>Periféricos</category>
+        <description>Teclado mecánico con switches blue y retroiluminación RGB.</description>
+        <inStock>true</inStock>
+    </product>
+
+    <product>
+        <id>2</id>
+        <name>Mouse Gamer 7200 DPI</name>
+        <price>799.50</price>
+        <imageUrl>mouse.jpg</imageUrl>
+        <category>Periféricos</category>
+        <description>Mouse ergonómico con sensor óptico de alta precisión.</description>
+        <inStock>true</inStock>
+    </product>
+
+    <product>
+        <id>3</id>
+        <name>Monitor 24'' Full HD</name>
+        <price>3499.00</price>
+        <imageUrl>monitor.jpg</imageUrl>
+        <category>Monitores</category>
+        <description>Pantalla LED de 24 pulgadas con resolución 1920x1080.</description>
+        <inStock>false</inStock>
+    </product>
+
+    <product>
+        <id>4</id>
+        <name>Laptop Ryzen 7</name>
+        <price>18999.99</price>
+        <imageUrl>laptop.jpg</imageUrl>
+        <category>Laptops</category>
+        <description>Laptop con procesador Ryzen 7, 16GB RAM y SSD de 512GB.</description>
+        <inStock>true</inStock>
+    </product>
+
+    <product>
+        <id>5</id>
+        <name>Audífonos Inalámbricos</name>
+        <price>1599.00</price>
+        <imageUrl>audifonos.webp</imageUrl>
+        <category>Audio</category>
+        <description>Audífonos Bluetooth con cancelación de ruido.</description>
+        <inStock>false</inStock>
+    </product>
+
+</products>
