@@ -17,26 +17,31 @@ export class ProductService {
 
 
     private parseProductsXml(xmlText: string): Product[] {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xmlText, 'application/xml');
 
-    // Si el XML está mal formado, normalmente aparece <parsererror>
-    if (doc.getElementsByTagName('parsererror').length > 0) {
-      return [];
-    }
-
-    const nodes = Array.from(doc.getElementsByTagName('product'));
-
-    return nodes.map((node) => ({
-      id: this.getNumber(node, 'id'),
-      name: this.getText(node, 'name'),
-      price: this.getNumber(node, 'price'),
-      imageUrl: this.getText(node, 'imageUrl'),
-      category: this.getText(node, 'category'),
-      description: this.getText(node, 'description'),
-      inStock: this.getBoolean(node, 'inStock'),
-    }));
+  // Evitar ejecución en entorno servidor
+  if (typeof window === 'undefined') {
+    return [];
   }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, 'application/xml');
+
+  if (doc.getElementsByTagName('parsererror').length > 0) {
+    return [];
+  }
+
+  const nodes = Array.from(doc.getElementsByTagName('product'));
+
+  return nodes.map((node) => ({
+    id: this.getNumber(node, 'id'),
+    name: this.getText(node, 'name'),
+    price: this.getNumber(node, 'price'),
+    imageUrl: this.getText(node, 'imageUrl'),
+    category: this.getText(node, 'category'),
+    description: this.getText(node, 'description'),
+    inStock: this.getBoolean(node, 'inStock'),
+  }));
+}
 
   private getText(parent: Element, tag: string): string {
     return parent.getElementsByTagName(tag)[0]?.textContent?.trim() ?? '';
