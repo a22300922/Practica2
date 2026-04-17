@@ -1,68 +1,108 @@
-
-import { Injectable, signal } from '@angular/core';
-import { Product } from '../models/producto.model';
+import { Injectable, signal, computed, effect, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Product, CartItem } from '../models/producto.model';
+import { CfdiService } from './cfdi.service';
 
 @Injectable({ providedIn: 'root' })
 export class CarritoService {
-  // Lista reactiva del carrito
-  private productosSignal = signal<Product[]>([]);
+  private platformId = inject(PLATFORM_ID);
+  private cfdiService = inject(CfdiService);
+  
+  // Lista reactiva del carrito con cantidades
+  private itemsSignal = signal<CartItem[]>([]);
 
   // Exponer como readonly
-  productos = this.productosSignal.asReadonly();
+  items = this.itemsSignal.asReadonly();
 
-  agregar(producto: Product) {
-    this.productosSignal.update(lista => [...lista, producto]);
+  // Contador total de items
+  itemCount = computed(() => 
+    this.itemsSignal().reduce((acc, item) => acc + item.quantity, 0)
+  );
+
+  // Total del carrito
+  total = computed(() => 
+    this.itemsSignal().reduce((acc, item) => acc + (item.product.price * item.quantity), 0)
+  );
+
+  constructor() {
+    // Cargar carrito desde localStorage al iniciar
+    if (isPlatformBrowser(this.platformId)) {
+      const saved = localStorage.getItem('carrito');
+      if (saved) {
+        try {
+          this.itemsSignal.set(JSON.parse(saved));
+        } catch {
+          this.itemsSignal.set([]);
+        }
+      }
+
+      // Guardar en localStorage cuando cambie
+      effect(() => {
+        const items = this.itemsSignal();
+        localStorage.setItem('carrito', JSON.stringify(items));
+      });
+    }
+  }
+
+  agregar(producto: Product, cantidad: number = 1) {
+    this.itemsSignal.update(lista => {
+      const existente = lista.find(item => item.product.id === producto.id);
+      if (existente) {
+        return lista.map(item => 
+          item.product.id === producto.id 
+            ? { ...item, quantity: item.quantity + cantidad }
+            : item
+        );
+      }
+      return [...lista, { product: producto, quantity: cantidad }];
+    });
+  }
+
+  actualizarCantidad(productId: number, cantidad: number) {
+    if (cantidad <= 0) {
+      this.quitar(productId);
+      return;
+    }
+    this.itemsSignal.update(lista => 
+      lista.map(item => 
+        item.product.id === productId 
+          ? { ...item, quantity: cantidad }
+          : item
+      )
+    );
   }
 
   quitar(id: number) {
-    this.productosSignal.update(lista => lista.filter(p => p.id !== id));
+    this.itemsSignal.update(lista => lista.filter(item => item.product.id !== id));
   }
 
   vaciar() {
-    this.productosSignal.set([]);
-  }
-
-  total(): number {
-    return this.productosSignal().reduce((acc, p) => acc + p.price, 0);
+    this.itemsSignal.set([]);
   }
 
   exportarXML() {
-    const productos = this.productosSignal();
+    const xml = this.cfdiService.generateCFDI40({
+      emisor: {
+        rfc: 'MIE010101AAA',
+        nombre: 'Mieles del Pirineo S.A. de C.V.',
+        regimenFiscal: '601'
+      },
+      receptor: {
+        rfc: 'XAXX010101000',
+        nombre: 'Publico en General',
+        domicilioFiscalReceptor: '00000',
+        regimenFiscalReceptor: '616',
+        usoCFDI: 'S01'
+      },
+      conceptos: this.itemsSignal(),
+      formaPago: '01',
+      metodoPago: 'PUE',
+      moneda: 'MXN',
+      tipoDeComprobante: 'I',
+      exportacion: '01',
+      lugarExpedicion: '00000'
+    });
 
-    // Estructura XML manual
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<recibo>\n`;
-
-    for (const p of productos) {
-      xml += `  <producto>\n`;
-      xml += `    <id>${p.id}</id>\n`;
-      xml += `    <nombre>${this.escapeXml(p.name)}</nombre>\n`;
-      xml += `    <precio>${p.price}</precio>\n`;
-      if (p.description) {
-        xml += `    <descripcion>${this.escapeXml(p.description)}</descripcion>\n`;
-      }
-      xml += `  </producto>\n`;
-    }
-
-    xml += `  <total>${this.total()}</total>\n`;
-    xml += `</recibo>`;
-
-    const blob = new Blob([xml], { type: 'application/xml' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'recibo.xml';
-    a.click();
-
-    URL.revokeObjectURL(url);
-  }
-
-  private escapeXml(value: string): string {
-    return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&apos;');
+    this.cfdiService.downloadCFDI(xml, `CFDI_${Date.now().toString(36).toUpperCase()}.xml`);
   }
 }

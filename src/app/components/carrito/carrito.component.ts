@@ -1,22 +1,44 @@
-import { Component, computed } from '@angular/core';
+import { Component, computed, Input, Output, EventEmitter } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { CarritoService } from '../../services/carrito.service';
-import { Product } from '../../models/producto.model';
+import { CartItem } from '../../models/producto.model';
 import { Signal } from '@angular/core';
 
 @Component({
   selector: 'app-carrito',
   standalone: true,
-  imports: [CurrencyPipe], // NO es CommonModule
+  imports: [CurrencyPipe],
   templateUrl: './carrito.component.html',
   styleUrls: ['./carrito.component.css'],
 })
 export class CarritoComponent {
-  carrito: Signal<Product[]>;
-  total = computed(() => this.carritoService.total());
+  @Input() isOverlay = true;
+  @Output() closeCart = new EventEmitter<void>();
 
-  constructor(private carritoService: CarritoService) {
-    this.carrito = this.carritoService.productos;
+  carrito: Signal<CartItem[]>;
+  total = computed(() => this.carritoService.total());
+  itemCount = computed(() => this.carritoService.itemCount());
+
+  constructor(
+    private carritoService: CarritoService,
+    private router: Router
+  ) {
+    this.carrito = this.carritoService.items;
+  }
+
+  incrementar(productId: number) {
+    const item = this.carrito().find(i => i.product.id === productId);
+    if (item) {
+      this.carritoService.actualizarCantidad(productId, item.quantity + 1);
+    }
+  }
+
+  decrementar(productId: number) {
+    const item = this.carrito().find(i => i.product.id === productId);
+    if (item && item.quantity > 1) {
+      this.carritoService.actualizarCantidad(productId, item.quantity - 1);
+    }
   }
 
   quitar(id: number) {
@@ -29,5 +51,15 @@ export class CarritoComponent {
 
   exportarXML() {
     this.carritoService.exportarXML();
+  }
+
+  irACheckout() {
+    this.closeCart.emit();
+    this.router.navigate(['/checkout']);
+  }
+
+  verCarritoCompleto() {
+    this.closeCart.emit();
+    this.router.navigate(['/carrito']);
   }
 }
